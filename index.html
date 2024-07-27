@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Road Kill</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Creepster&display=swap");
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: black;
+        color: white;
+        font-family: "Creepster", cursive;
+      }
+      #title {
+        position: absolute;
+        top: 20px;
+        width: 100%;
+        font-size: 64px;
+        text-align: center;
+        text-shadow: 2px 2px 8px red;
+        z-index: 10;
+      }
+      #game-container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+      #play-again,
+      .button {
+        display: none;
+        position: absolute;
+        font-size: 64px;
+        color: white;
+        font-family: "Creepster", cursive;
+        cursor: pointer;
+        z-index: 20;
+        text-shadow: 2px 2px 8px red;
+      }
+      #play-again {
+        top: 70%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="title">Road Kill</div>
+    <div id="game-container"></div>
+    <div id="play-again">Return to Main Menu</div>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
