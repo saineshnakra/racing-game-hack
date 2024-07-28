@@ -10,7 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2",
     "phaser": "^3.80.1",
     "web3": "^4.11.1"
+  },
+  "directories": {
+    "test": "test"
   }
 }

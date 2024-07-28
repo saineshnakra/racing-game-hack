@@ -7,6 +7,105 @@ const MenuScene = new Phaser.Class({
   create: createMenu,
 });
 
+let web3;
+let account;
+
+async function connectWallet() {
+  if (window.ethereum) {
+    web3 = new Web3(window.ethereum);
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      const accounts = await web3.eth.getAccounts();
+      account = accounts[0];
+      console.log(`Connected to account: ${account}`);
+    } catch (error) {
+      console.error("User denied account access");
+    }
+  } else {
+    console.error(
+      "Non-Ethereum browser detected. You should consider trying MetaMask!"
+    );
+  }
+}
+
+async function pushScoreToLeaderboard(score) {
+  const leaderboardContractAddress = "YOUR_LEADERBOARD_CONTRACT_ADDRESS";
+  const leaderboardContractABI = [
+    /* Your Leaderboard Contract ABI */
+  ];
+
+  const leaderboardContract = new web3.eth.Contract(
+    leaderboardContractABI,
+    leaderboardContractAddress
+  );
+
+  try {
+    await leaderboardContract.methods
+      .updateScore(account, score)
+      .send({ from: account });
+    console.log("Score pushed to leaderboard");
+  } catch (error) {
+    console.error("Error pushing score to leaderboard:", error);
+  }
+}
+
+const SkinsScene = new Phaser.Class({
+  Extends: Phaser.Scene,
+  initialize: function SkinsScene() {
+    Phaser.Scene.call(this, { key: "SkinsScene" });
+  },
+  preload: preloadSkins,
+  create: createSkins,
+});
+
+function preloadSkins() {
+  this.load.image("car_red", "assets/car_red_1.png");
+  this.load.image("car_blue", "assets/car_blue_1.png");
+  this.load.image("car_green", "assets/car_green_1.png");
+}
+
+function createSkins() {
+  this.sound.stopAll(); // Stop all sounds when switching scenes
+  this.add
+    .image(window.innerWidth / 2, window.innerHeight / 2, "menuBackground")
+    .setDisplaySize(window.innerWidth, window.innerHeight);
+
+  let carSkins = ["car_red", "car_blue", "car_green"];
+  let selectedSkin = localStorage.getItem("selectedSkin") || "car_red";
+
+  carSkins.forEach((skin, index) => {
+    let skinButton = this.add
+      .image(
+        window.innerWidth / 2,
+        window.innerHeight / 2 - 100 + index * 100,
+        skin
+      )
+      .setInteractive()
+      .setScale(0.5);
+
+    skinButton.on("pointerdown", () => {
+      localStorage.setItem("selectedSkin", skin);
+      selectedSkin = skin;
+      this.scene.start("MenuScene");
+    });
+  });
+
+  let backButton = this.add
+    .text(window.innerWidth / 2, window.innerHeight - 100, "Back", {
+      fontSize: "32px",
+      fill: "#FFFFFF",
+      fontFamily: "'Creepster', cursive",
+    })
+    .setOrigin(0.5)
+    .setInteractive();
+
+  backButton.on("pointerdown", () => {
+    this.scene.start("MenuScene");
+  });
+
+  this.sound.add("mainBackgroundSound", { loop: true }).play();
+}
+
 const GameScene = new Phaser.Class({
   Extends: Phaser.Scene,
   initialize: function GameScene() {
@@ -58,31 +157,70 @@ let maxLevel = localStorage.getItem("maxLevel") || 0; // Retrieve max level from
 
 function preloadMenu() {
   this.load.image("menuBackground", "assets/menu_background.jpg");
+  this.load.audio("mainBackgroundSound", "assets/main-background-sound.mp3");
 }
 
 function createMenu() {
+  this.sound.stopAll(); // Stop all sounds when switching scenes
   this.add
     .image(window.innerWidth / 2, window.innerHeight / 2, "menuBackground")
     .setDisplaySize(window.innerWidth, window.innerHeight);
 
+  let connectButton = this.add
+    .text(
+      window.innerWidth / 2,
+      window.innerHeight / 2 - 100,
+      "Connect Wallet",
+      {
+        fontSize: "64px",
+        fill: "#FFFFFF",
+        fontFamily: "'Creepster', cursive",
+      }
+    )
+    .setOrigin(0.5)
+    .setInteractive();
+
   let startButton = this.add
     .text(window.innerWidth / 2, window.innerHeight / 2, "Start Game", {
       fontSize: "64px",
-      fill: "#ff0000",
+      fill: "#FFFFFF", // Change color to white
       fontFamily: "'Creepster', cursive",
     })
     .setOrigin(0.5)
     .setInteractive();
 
-  startButton.on("pointerdown", () => {
-    this.scene.start("GameScene");
+  let skinsButton = this.add
+    .text(window.innerWidth / 2, window.innerHeight / 2 + 100, "Skins", {
+      fontSize: "64px", // Change font size to match "Start Game" button
+      fill: "#FFFFFF",
+      fontFamily: "'Creepster', cursive",
+    })
+    .setOrigin(0.5)
+    .setInteractive();
+
+  connectButton.on("pointerdown", async () => {
+    await connectWallet();
+    this.sound.add("mainBackgroundSound", { loop: true }).play();
   });
 
-  // Display max level
+  skinsButton.on("pointerdown", () => {
+    this.scene.start("SkinsScene");
+  });
+
+  startButton.on("pointerdown", () => {
+    if (account) {
+      this.scene.start("GameScene");
+      this.sound.stopAll(); // Stop all sounds when switching scenes
+    } else {
+      alert("Please connect your wallet first.");
+    }
+  });
+
+  // Display max level below the "Skins" button
   this.add
     .text(
       window.innerWidth / 2,
-      window.innerHeight / 2 + 100,
+      window.innerHeight / 2 + 200,
       `Max Level: ${maxLevel}`,
       {
         fontSize: "32px",
@@ -91,6 +229,8 @@ function createMenu() {
       }
     )
     .setOrigin(0.5);
+
+  this.sound.add("mainBackgroundSound", { loop: true }).play();
 }
 
 function preload() {
@@ -102,6 +242,9 @@ function preload() {
   this.load.image("blood", "assets/blood.png"); // Add blood particle image
   this.load.image("police", "assets/police.svg"); // Load the police car SVG
   this.load.image("sideBackground", "assets/side_background.jpg"); // Add side background image
+  this.load.audio("normalGameSound", "assets/normal-game-sound.mp3");
+  this.load.audio("gasFuelSound", "assets/gas-fuel.mp3");
+  this.load.audio("killscore", "assets/kill.mp3");
 }
 
 function startGame() {
@@ -224,6 +367,7 @@ function collectFuel(player, fuel) {
   fuel.destroy();
   fuelLevel = Math.min(fuelLevel + 6, 100); // Increase fuel level but cap at 100
   fuelText.setText("Fuel: " + fuelLevel);
+  this.sound.play("gasFuelSound");
 }
 
 function collectScore(player, scoreItem) {
@@ -235,6 +379,8 @@ function collectScore(player, scoreItem) {
   if (score % 5 === 0) {
     levelUp.call(this);
   }
+
+  this.sound.play("killscore");
 
   // Add blood splash animation
   let bloodEmitter = this.add.particles("blood").createEmitter({
@@ -320,6 +466,7 @@ function spawnFuel() {
   );
   let fuel = fuels.create(x, 0, "fuel");
   fuel.setVelocityY((200 * gameSpeed) / 2); // Adjust the speed of fuels
+  fuel.setScale(0.1); // Adjust the scale as needed
 }
 
 function spawnScore() {
@@ -460,15 +607,25 @@ function create() {
     quantity: 5,
     on: false,
   });
+
+  this.sound.add("normalGameSound", { loop: true }).play();
 }
 
-function endGame(message) {
+async function endGame(message) {
   this.scene.pause();
 
   // Store the max level reached
   if (level > maxLevel) {
     maxLevel = level;
     localStorage.setItem("maxLevel", maxLevel);
+  }
+
+  console.log("Pushing score to leaderboard...");
+  try {
+    await pushScoreToLeaderboard(score);
+    console.log("Score pushed successfully.");
+  } catch (error) {
+    console.error("Failed to push score to leaderboard:", error);
   }
 
   let gameOverText = this.add
