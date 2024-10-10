@@ -45,3 +45,4 @@ dist/
 .idea/
 *.sublime-project
 *.sublime-workspace
+.vercel
